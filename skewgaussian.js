@@ -113,6 +113,21 @@ class skewGaussian extends Core {
     get apha(){return this.#skew}
     get delta() { return this.skew / Math.sqrt(1 + Math.pow(this.skew, 2)); }
     get copy(){return skewMeanGaussian(this.mean, this.variance)}
+    pdf(){
+
+    }
+
+    cdf(){
+
+    }
+
+    ccdf(){
+        return 1 - this.cdf(x);
+    }
+
+    ppf(){
+
+    }
 }
 
 class skewMeanGaussian extends Core {
@@ -128,26 +143,49 @@ class skewMeanGaussian extends Core {
 
     get mean(){return this.#mean;}
     get variance() { return this.#variance }
-    get std(){ return Math.pow(this.variance, 2);}
-    get location() {return location;}
-    get scale() {return scale;}
+    get std() { return this.scale; }
+    get location() { return this.mean - this.scale * this.delta * Math.sqrt(2 / Math.PI); }
+    get scale() {
+        return Math.sqrt(this.variance / (1 - (2 * Math.pow(this.delta, 2) / Math.PI)), 2);
+    }
     get apha(){return this.#skew}
     get delta() { return this.skew / Math.sqrt(1 + Math.pow(this.skew, 2)); }
     get copy(){return skewMeanGaussian(this.mean, this.variance)}
 
     pdf(){
-
+        let result = [];
+        for (let arg of args) {
+            const exp = - Math.pow(x - this.location, 2) / 2 / this.scale / this.scale;
+            const a = 2 * Math.exp(exp) / this.scale / Math.sqrt(2 * Math.PI);
+            const b = this.znorm1((this.normalize(x) * this.skew) || 0);
+            result.push(0.5 * a + b * a);
+        }
+        return result.length == 1 ? result[0] : result;
     }
 
-    cdf(){
-
+    cdf(...args){
+        let result = [];
+        for (let arg of args){
+            if (!arg || arg == Infinity) result.push(!arg ? 0 : 1);
+            else result.push()
+        }
+        return result.length == 1 ? result[0] : result; 
     }
 
-    ccdf(){
-        return 1 - this.cdf(x);
+    ccdf(...args){
+        let result = [];
+        for (let arg of args) result.push(1 - this.cdf(arg));
+        return result.length == 1 ? result[0] : result;
     }
 
     ppf(){
+        if (x > 1 || x < 0) throw "Valor fuera de rango";
+        let [currentValue, percent, cont] = [this.mean, Infinity, 500];
+        while (Math.abs((percent - x) / x) > this.precision && --cont) {
+            percent = this.cdf(currentValue);
+            currentValue = currentValue * (1 + ((x - percent) / percent));
+        }
+        return currentValue;
 
     }
 
